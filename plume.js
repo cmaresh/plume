@@ -67,6 +67,7 @@ function defaultRemove(plume) {
 function getDefaultRoot() {
     const li = document.createElement('li');
     li.setAttribute('plume-item-content', '');
+    li.classList.add('plume-item');
     return li;
 }
 
@@ -161,7 +162,7 @@ class List {
         basic: getDefaultBasic(),
         waiting: getDefaultWaiting(),
     }
-    selection;
+    selection = [];
 
     constructor(list) {
         this.index = 0;
@@ -174,16 +175,13 @@ class List {
         }
     }
 
-    changeSelection(item = null) {
-        this.items.forEach(item => {
-            if (item.classList.contains('plume-editing')) {
-                item.classList.remove('plume-editing');
-            }
-            item.classList.remove('plume-selection');
-        });
-        if (item) {
-            this.selection = item;
-            item.classList.add('plume-selection');
+    toggleSelection(item = null) {
+        if (item.classList.contains('plume-selected')) {
+            item.classList.remove('plume-selected');
+            this.selected = this.selected.filter(_item => _item != item);
+        } else {
+            item.classList.add('plume-selected');
+            this.selected.push(item);
         }
     }
 
@@ -289,10 +287,15 @@ class Plume {
         this.list = list;
         this.menu = menu;
 
-        this.list.elem.addEventListener('clikc', e => {
+        this.list.elem.addEventListener('click', e => {
             let elem = e.target;
 
-            //while (!elem.classList.contains(''))
+            while (!elem.classList.contains('plume-item')) {
+                elem = elem.parentNode;
+                if (elem == list) return;
+            }
+
+            list.toggleSelection(elem);
         });
 
         this.menu.elem.addEventListener('click', e => {
