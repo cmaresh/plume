@@ -40,16 +40,43 @@ function defaultAdd(plume) {
     plume.list.addItem();
 }
 
-function defaultCancel(plume) {
-    menu.toggleSubmenu('waiting');
-}
-
 function defaultShiftUp(plume) {
+    const list = plume.list;
+    const selection = plume.list.selection;
 
+    for (let i = 0; i < list.elem.children.length; i++) {
+        if (list.elem.children[i].classList.contains('plume-selected')) {
+            if (i == 0) continue;
+            if (list.elem.children[i-1].classList.contains('plume-selected')) continue;
+            let elem = list.elem.children[i]
+            let siblingElem = list.elem.children[i-1];
+            list.elem.removeChild(elem);
+            list.elem.insertBefore(elem, siblingElem);
+        }
+    }
 }
 
 function defaultShiftDown(plume) {
+    const list = plume.list;
+    const selection = plume.list.selection;
 
+    for (let i = list.elem.children.length - 1; i >= 0; i--) {
+        if (list.elem.children[i].classList.contains('plume-selected')) {
+            if (i == list.elem.children.length - 1) continue;
+            if (list.elem.children[i+1].classList.contains('plume-selected')) continue;
+            let elem = list.elem.children[i]
+            let siblingElem;
+            if (i <= list.elem.children.length - 2) {
+                siblingElem = list.elem.children[i+2];
+            }
+            list.elem.removeChild(elem);
+            if (siblingElem) {
+                list.elem.insertBefore(elem, siblingElem);
+            } else {
+                list.elem.appendChild(elem);
+            }
+        }
+    }
 }
 
 function defaultChangePos(plume) {
@@ -83,6 +110,30 @@ function getDefaultWaiting() {
     return span;
 }
 
+class Hooks {
+    //plume_focus
+    //plume_blur
+    //plume_item_clicked
+    //plume_item_added
+    //plume_item_shifted
+    //plume_item_removed
+    //plume_item_state_change
+    hooks;
+    constructor() {
+        this.hooks = {};
+        this.hooks['plume_blur'] = [];
+        this.hooks['plume_item_clicked'] = [];
+    }
+
+    add(hook, func) {
+        this.hooks[hook].push(func);
+    }
+
+    run(hook, args) {
+        this.hooks[hook].forEach(func => func(args));
+    }
+}
+
 class Item {
     props = {}
     nodes = {};
@@ -103,7 +154,7 @@ class Item {
             this.nodes[template] = templates[template].cloneNode(true);
         }
 
-        this.swap("basic");
+        this.changeState("basic");
     }
 
     load(node) {
@@ -134,7 +185,7 @@ class Item {
         }
     }
 
-    swap(node) {
+    changeState(node) {
         this.load(node)
         const nodeElem = this.nodes[node];
         if (this.nodes.root.hasAttribute('plume-item-content')) {
@@ -175,13 +226,23 @@ class List {
         }
     }
 
+    setSelection(item, select) {
+        if (!select) {
+            item.classList.remove('plume-selected');
+            this.selection = this.selection.filter(_item => _item != item);
+        }
+        else {
+            item.classList.add('plume-selected');
+            this.selection.push(item);
+        }
+    }
     toggleSelection(item = null) {
         if (item.classList.contains('plume-selected')) {
             item.classList.remove('plume-selected');
-            this.selected = this.selected.filter(_item => _item != item);
+            this.selection = this.selection.filter(_item => _item != item);
         } else {
             item.classList.add('plume-selected');
-            this.selected.push(item);
+            this.selection.push(item);
         }
     }
 
@@ -214,11 +275,11 @@ class Menu {
             newOption.button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>';
         }
 
-        if (id == 'cancel') {
-            newOption.submenu = 'adding';
-            newOption.action = defaultCancel;
-            newOption.button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-dash-circle" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"/></svg>';
-        }
+        // if (id == 'cancel') {
+        //     newOption.submenu = 'adding';
+        //     newOption.action = defaultCancel;
+        //     newOption.button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-dash-circle" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"/></svg>';
+        // }
 
         if (id == 'shiftup') {
             newOption.submenu = 'selection';
@@ -286,16 +347,28 @@ class Plume {
     constructor(list, menu) {
         this.list = list;
         this.menu = menu;
+        this.hooks = new Hooks();
+
+        document.addEventListener('click', e => {
+            let elem = e.target;
+            while (elem.parentNode) {
+                if (elem == this.list) return;
+                if (elem == this.menu) return;
+                elem = elem.parentNode;
+            }
+            this.hooks.run('plume_blur');
+        });
 
         this.list.elem.addEventListener('click', e => {
             let elem = e.target;
 
             while (!elem.classList.contains('plume-item')) {
+                if (elem.hasAttribute('plume')) return;
                 elem = elem.parentNode;
-                if (elem == list) return;
             }
 
-            list.toggleSelection(elem);
+            if (e.target.tagName == 'INPUT' && elem.classList.contains('plume-selected')) return;
+            this.hooks.run('plume_item_clicked', elem);
         });
 
         this.menu.elem.addEventListener('click', e => {
@@ -358,6 +431,14 @@ function plume(params=['add', 'cancel', 'shiftup', 'shiftdown', 'changepos', 'ed
         
         const plume = new Plume(list, menu);
 
+        plume.hooks.add('plume_item_clicked', (item) => {
+            plume.list.toggleSelection(item);
+            if (plume.list.selection.length > 0) {
+                plume.menu.toggleSubmenu('selection');
+            } else {
+                plume.menu.toggleSubmenu('waiting')
+            }
+        })
         // const listOptions = document.getElementById("list-options");
         // const listItems = document.getElementById("list-items");
 
