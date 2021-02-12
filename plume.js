@@ -13,7 +13,8 @@
 //
 
 function defaultAdd(plume) {
-    plume.list.addItem();
+    const item = plume.list.addItem();
+    item.elem.querySelector('input').focus();
 }
 
 function defaultShiftUp(plume) {
@@ -60,6 +61,7 @@ function defaultEdit(plume) {
         item.elem.classList.add('plume-editing');
     });
     plume.menu.toggleSubmenu('editing');
+    selection[0].elem.querySelector('input').focus();
 }
 
 function defaultSave(plume) {
@@ -335,10 +337,13 @@ class Menu {
 
     toggleSubmenu(submenu) {
         this.options.forEach(option => {
+            console.log(option.submenu.includes(submenu));
             if (option.submenu.includes(submenu)) {
-                option.button.style.display = 'block';
+                option.button.classList.remove('plume-disabled');
             } else {
-                option.button.style.display = 'none';
+                if (!option.button.classList.contains('plume-disabled')) {
+                    option.button.classList.add('plume-disabled');
+                }
             }
         })
     }
@@ -438,8 +443,8 @@ function plume(params=['add', 'shiftup', 'shiftdown', 'edit', 'save', 'remove'])
     // let editing = false;
     // let editingElem;
 
-        const listElem = document.querySelector('[plume]');
-        const menuElem = document.querySelector('[plume-menu]');
+        let listElem = document.querySelector('[plume]');
+        let menuElem = document.querySelector('[plume-menu]');
 
         if (!listElem) {
             console.warn('Unable to find <plume> element on this page. Exiting.');
@@ -449,6 +454,7 @@ function plume(params=['add', 'shiftup', 'shiftdown', 'edit', 'save', 'remove'])
         if (!menuElem) {
             menuElem = document.createElement('div');
             menuElem.setAttribute('plume-menu', '');
+            document.querySelector('body').appendChild(menuElem);
         }
 
         const list = new List(listElem);
@@ -499,7 +505,7 @@ function plume(params=['add', 'shiftup', 'shiftdown', 'edit', 'save', 'remove'])
             if (selected.length > 0) {
                 plume.menu.toggleSubmenu('selection');
             } else {
-                plume.menu.toggleSubmenu('waiting')
+                plume.menu.toggleSubmenu('default')
             }
         });
 
@@ -519,3 +525,7 @@ function plume(params=['add', 'shiftup', 'shiftdown', 'edit', 'save', 'remove'])
         
         return plume;
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    plume();
+})
