@@ -2,13 +2,6 @@
 <html>
     <head>
         <style>
-<<<<<<< HEAD
-            [plume-menu] {
-                display: flex;
-            }
-
-            .plume-selected {
-=======
             body {
                 display: flex;
                 flex-direction: column;
@@ -33,16 +26,12 @@
             }
 
             .plume-item.plume-selected {
->>>>>>> 88f087aa0e99b9c85ae0d12084c84c83a164cd36
                 background-color: red;
             }
         </style>
     </head>
     <body>
         <ol plume></ol>
-<<<<<<< HEAD
-        <script src="./plume.js"></script>
-=======
         <div plume-menu></div>
         <script src="plume.js"></script>
         <script>
@@ -53,14 +42,12 @@
                 });
             }
             document.addEventListener('DOMContentLoaded', (event) => {
-                const myPlume = plume();
-                myPlume.option(
+                plume.option(
                     'copy',
                     ['selection', 'editing'],
                     copyElem,
                 );
             });
         </script>
->>>>>>> 88f087aa0e99b9c85ae0d12084c84c83a164cd36
     </body>
 </html>

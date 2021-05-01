@@ -11,7 +11,6 @@
 //      add menu elements as child of <body>
 //
 //
-const plume;
 
 function defaultAdd(plume) {
     const item = plume.list.addItem();
@@ -268,7 +267,6 @@ class Menu {
     }
 
     addOption(id, submenu = [], action = null, innerHTML = '') {
-        console.log(id);
         if (this.options.find(option => option.id == id)) throw new Error("Option " + id + " already exists");
         const button = document.createElement("button");
         button.id = "plume-" + id;
@@ -339,7 +337,6 @@ class Menu {
     }
 
     toggleSubmenu(submenu) {
-        console.log(this.options);
         this.options.forEach(option => {
             const active = option.active && option.active.includes(submenu);
             const disabled = !active;
@@ -542,3 +539,6 @@ function init(params=['add', 'shiftup', 'shiftdown', 'edit', 'save', 'remove']) 
         
         return plume;
 }
+
+let plume;
+document.addEventListener('DOMContentLoaded', () => plume = init());
